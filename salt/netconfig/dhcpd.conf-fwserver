@@ -1,0 +1,40 @@
+# dhcpd.conf
+
+default-lease-time 600;
+max-lease-time 7200;
+
+ddns-update-style             interim;
+
+option subnet-mask            255.255.255.0;
+option broadcast-address      192.168.5.255;
+option routers                192.168.0.1;
+option domain-name-servers    192.168.5.1, 8.8.8.8, 8.8.4.4;
+option domain-name            "fw-server";   # You really should fix this
+#option option-128 code 128 = string;
+#option option-129 code 129 = text;
+
+
+get-lease-hostnames           true;
+
+#next-server                   192.168.5.1;
+
+subnet 192.168.5.0 netmask 255.255.255.0 {
+    range   192.168.5.101  192.168.5.151;
+#
+# If you need to pass parameters on the kernel command line, you can
+# do it with option-129.  In order for Etherboot to look at option-129,
+# you MUST have option-128 set to a specific value.  The value is a
+# special Etherboot signature of 'e4:45:74:68:00:00'.
+#
+# Add these two lines to the host entry that needs kernel parameters
+#
+#        option option-128     e4:45:74:68:00:00;       # NOT a mac address
+#        option option-129     "NIC=ne IO=0x300";
+#
+	host wifi-princ {
+		hardware ethernet	78:44:76:41:13:E5;
+		fixed-address		192.168.5.50;
+	}
+
+}
+#      filename "/tftpboot/lts/vmlinuz-2.6.16.1-ltsp-2";

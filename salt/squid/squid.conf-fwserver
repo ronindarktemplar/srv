@@ -1,0 +1,161 @@
+#!/bin/bash
+#ederson ronindarktemplar@hotmail.com
+#19-997812209
+#BesideYou.TI@gmail.com
+#
+#
+
+http_port 192.168.5.1:3128
+
+#http_port 192.168.0.102:3128 transparent
+#http_port 127.0.0.1:3128 intercept
+#http_port 192.168.0.102:8080
+
+visible_hostname on
+
+dns_nameservers 8.8.8.8
+dns_nameservers 8.8.4.4
+
+auth_param basic program /usr/lib64/squid/basic_ncsa_auth  /etc/squid/passwd
+#auth_param basic children 5
+auth_param basic children 20 startup=5 idle=1
+auth_param basic casesensitive on
+auth_param basic realm Servidor Proxy -
+auth_param basic credentialsttl 25 minutes 
+acl geral proxy_auth REQUIRED
+acl vip   proxy_auth eder rudimar
+#acl dliberado  dstdomain -i "/etc/squid/sites/sidominios.txt"
+acl dbloqueado dstdomain -i "/etc/squid/sites/nodominios.txt"
+acl BANCOS url_regex "/etc/squid/sites/bancos.txt"
+
+
+#acl tudo dstdomain 0.0.0.0/0.0.0.0
+
+# Media streaming acl
+acl media rep_mime_type video/flv video/x-flv
+acl media rep_mime_type -i ^video/
+acl media rep_mime_type -i ^video\/
+acl media rep_mime_type ^application/x-shockwave-flash
+acl media rep_mime_type ^application/vnd.ms.wms-hdr.asfv1
+acl media rep_mime_type ^application/x-fcs
+acl media rep_mime_type ^application/x-mms-framed
+acl media rep_mime_type ^video/x-ms-asf
+acl media rep_mime_type ^audio/mpeg
+acl media rep_mime_type ^audio/x-scpls
+acl media rep_mime_type ^video/x-flv
+acl media rep_mime_type ^video/mpeg4
+acl media rep_mime_type ms-hdr
+acl media rep_mime_type x-fcs
+acl mediapr urlpath_regex \.flv(\?.*)?$
+acl mediapr urlpath_regex -i \.(avi|mp4|mov|m4v|mkv|flv)(\?.*)?$
+acl mediapr urlpath_regex -i \.(mpg|mpeg|avi|mov|flv|wmv|mkv|rmvb)(\?.*)?$
+
+
+acl extensoesdinamicas urlpath_regex cgi-bin \? scripts \.php$ \.asp$ \.action$ \.css$ \.dll$ \.do$ \.exe$ \.ftl$ \.js$ \.jsp$ \.lzx$ \.vm$ \.def$ \.aspx$
+
+
+# liberar server na intranet para nao usar cache
+#acl local-servers dstdomain my.domain.net
+#always_direct allow local-servers
+
+# To always forward FTP requests directly, use
+acl FTP proto FTP
+always_direct allow FTP
+
+acl manager url_regex -i ^cache_object:// /squid-internal-mgr/ 
+#acl manager proto cache_object
+#acl localhost src 127.0.0.1 ::1
+#acl to_localhost dst 127.0.0.0/8
+acl rede_interna src 192.168.5.0/24
+#acl rede_interna src 192.168.3.0/24
+acl SSL_ports port 443 445 81
+acl Safe_ports port 80		# http
+acl Safe_ports port 21		# ftp
+acl Safe_ports port 443		# https, snews
+acl Safe_ports port 563		# https, snews
+acl Safe_ports port 70		# gopher
+acl Safe_ports port 210		# wais
+acl Safe_ports port 1025-65535	# unregistered ports
+acl Safe_ports port 280		# http-mgmt
+acl Safe_ports port 488		# gss-http
+acl Safe_ports port 777		# multiling http
+acl Safe_ports port 901		# SWAT
+acl Safe_ports port 1863	# MSN
+acl Safe_ports port 210  	# shiranai
+acl Safe_ports port 280  	# nao sei
+acl Safe_ports port 468  	# nao sei
+acl Safe_ports port 591         # filemaker
+
+
+#liberadas no firewall bypass squid
+#acl Safe_ports port 465 	# bradesco e gmail
+#acl Safe_ports port 995 	# bradesco e gmail
+#acl Safe_ports port 109 # SMTP
+#acl Safe_ports port 995 # pop ssl
+#acl Safe_ports port 407 # msn
+#acl Safe_ports port 25 # smtp
+#acl Safe_ports port 110 # pop
+#acl Safe_ports port 587 # smtp2
+#acl Safe_ports port 143 # imap2
+#acl Safe_ports port 993 # imap
+#acl Safe_ports port 873 # rsync
+#acl Safe_ports port 631 # cups
+
+
+acl purge method PURGE
+acl CONNECT method CONNECT
+
+http_access allow manager localhost rede_interna 
+http_access deny manager
+
+http_access allow vip
+
+http_access allow purge localhost
+http_access deny purge
+
+http_access deny !Safe_ports
+
+http_access deny CONNECT !SSL_ports
+
+http_access allow localhost
+
+http_access deny dbloqueado 
+#deny_info  ERR_CHUCK  dbloqueado
+
+#http_access allow dliberado
+
+#http_access allow rede_interna
+
+http_access allow geral
+
+http_access deny all
+http_reply_access allow all
+icp_access allow all
+
+#Opcoes de no cache
+#no_cache deny extensoesdinamicas
+always_direct  allow extensoesdinamicas
+always_direct  allow media
+always_direct  allow mediapr
+always_direct  allow FTP
+always_direct  allow BANCOS
+
+no_cache deny  extensoesdinamicas
+no_cache deny  media
+no_cache deny  mediapr
+no_cache deny  FTP
+no_cache deny  BANCOS
+
+
+#icp_access allow all
+#httpd_accel_host virtual
+#httpd_accel_port 80
+#httpd_accel_with_proxy on
+#httpd_accel_uses_host_header on
+
+coredump_dir /var/cache/squid
+
+cache_access_log /var/log/squid/access.log
+
+cache_dir ufs /squid/cache 12000 16 256
+

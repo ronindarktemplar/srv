@@ -1,0 +1,3 @@
+include:
+- .bashrc-root
+- .resolv
